@@ -1,97 +1,123 @@
-#include <cmath>
-#include <stdexcept>
-#include <iostream>
-#include <string>
+#include <iostream>      
+#include <fstream>       
+#include <cmath>        
+#include <string>        
 
 using namespace std;
 
-class Rectangle {
-private:
-    double a, b; // rectangle sides
+const double PI = 3.14159265358979323846;
 
+class Circle {
+protected:
+    double radius;
+    string* circleData; // Something to destroy
 public:
-    Rectangle(double sideA, double sideB) : a(sideA), b(sideB) {}
-
-    // Standard area
-    double square() const {
-        return a * b; 
+    Circle(double r) : radius(r) {
+        circleData = new string("Circle data with radius: " + to_string(radius));
     }
 
-    double square(char method) const {
-        if (method == 'd' || method == 'D') {
-            double d = sqrt(a * a + b * b);   // calculate diagonal
-            return (d * d) / 2;               
-        }
-        else {
-            throw invalid_argument("Unknown method for area calculation");
-        }
+    virtual double square() {
+        return PI * radius * radius;
     }
 
-
-    double perimeter() const {
-        return 2 * (a + b);
+    double circumference() {
+        return 2 * PI * radius;
     }
 
-    double diagonal() const {
-        return sqrt(a * a + b * b);
+    virtual string info() {
+        return "Circle: radius = " + to_string(radius) +
+            ", square = " + to_string(square()) +
+            ", circumference = " + to_string(circumference());
     }
 
-    void printInfo() const {
-        cout << "Rectangle:" << endl;
-        cout << "Side a = " << a << ", b = " << b << endl;
-        cout << "Area = " << square() << endl;
-        cout << "Perimeter = " << perimeter() << endl;
-        cout << "Diagonal = " << diagonal() << endl;
-        cout << "------------------------" << endl;
+    virtual ~Circle() {
+        cout << "Circle destructor: deleting circle data" << endl;
+        delete circleData; // DESTROY DATA
+    }
+};
+
+class RightTriangle {
+protected:
+    double a, b;
+    string* triangleData; // Something to destroy
+public:
+    RightTriangle(double cat1, double cat2) : a(cat1), b(cat2) {
+        triangleData = new string("Triangle data with legs: " + to_string(a) + ", " + to_string(b));
     }
 
-    // overloaded print with title
-    void printInfo(const string& title) const {
-        cout << title << endl;
-        printInfo();
+    virtual double square() {
+        return 0.5 * a * b;
     }
 
-    // proportional increase (10%)
-    Rectangle& operator++() {
-        a *= 1.1;
-        b *= 1.1;
-        return *this;
+    double perimeter() {
+        double c = sqrt(a * a + b * b);
+        return a + b + c;
     }
 
-    // proportional decrease (10%)
-    Rectangle& operator--() {
-        a *= 0.9;
-        b *= 0.9;
-        if (a <= 0 || b <= 0)
-            throw invalid_argument("Sides cannot be <= 0 after reduction");
-        return *this;
+    virtual string info() {
+        return "Right triangle: legs = " + to_string(a) + ", " + to_string(b) +
+            ", square = " + to_string(square()) +
+            ", perimeter = " + to_string(perimeter());
+    }
+
+    virtual ~RightTriangle() {
+        cout << "Triangle destructor: deleting triangle data" << endl;
+        delete triangleData; // DESTROY DATA
+    }
+};
+
+class InscribedRightTriangle : public Circle, public RightTriangle {
+public:
+    InscribedRightTriangle(double cat1, double cat2)
+        : RightTriangle(cat1, cat2),
+        Circle(sqrt(cat1* cat1 + cat2 * cat2) / 2) {}
+
+    double square() override {
+        return RightTriangle::square();
+    }
+
+    string info() {
+        return "Right triangle inscribed in circle: legs = " + to_string(a) + ", " + to_string(b) +
+            ", circumradius = " + to_string(radius) +
+            ", triangle square = " + to_string(RightTriangle::square()) +
+            ", triangle perimeter = " + to_string(perimeter()) +
+            ", circle square = " + to_string(Circle::square()) +
+            ", circle circumference = " + to_string(circumference());
     }
 };
 
 int main() {
-    try {
-        double a, b;
-        cout << "Enter side a: ";
-        cin >> a;
-        cout << "Enter side b: ";
-        cin >> b;
+    double cat1, cat2;
 
-        Rectangle p(a, b);
-        p.printInfo("Initial rectangle:");
+    cout << "Enter the first leg of the right triangle: ";
+    cin >> cat1;
+    cout << "Enter the second leg of the right triangle: ";
+    cin >> cat2;
 
-        ++p;
-        p.printInfo("After ++ :");
+    InscribedRightTriangle triangle(cat1, cat2);
 
-        --p;
-        p.printInfo("After -- :");
+    // GET INDIVIDUAL AREAS:
+    cout << "\n--- Individual Areas ---" << endl;
+    cout << "Only triangle area: " << triangle.RightTriangle::square() << endl;
+    cout << "Only circle area: " << triangle.Circle::square() << endl;
 
-        // test overloaded area method
-        cout << "Area using diagonal method: " << p.square('d') << endl;
+    // GET PERIMETER AND CIRCUMFERENCE:
+    cout << "\n--- Perimeter and Circumference ---" << endl;
+    cout << "Triangle perimeter: " << triangle.perimeter() << endl;
+    cout << "Circle circumference: " << triangle.circumference() << endl;
 
+    ofstream file("result.txt");
+    if (file.is_open()) {
+        file << "Shape information:" << endl;
+        file << "==========================================" << endl;
+        file << triangle.info() << endl;
+        file.close();
+        cout << "\nResults written to file 'result.txt'" << endl;
     }
-    catch (const exception& e) {
-        cerr << "Error: " << e.what() << endl;
+    else {
+        cout << "Error opening file!" << endl;
     }
 
+    cout << "\nDestructors will clean up when program ends..." << endl;
     return 0;
 }
