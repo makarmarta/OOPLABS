@@ -1,123 +1,127 @@
-#include <iostream>      
-#include <fstream>       
-#include <cmath>        
-#include <string>        
-
+#include <iostream>
+#include <cmath>
 using namespace std;
 
-const double PI = 3.14159265358979323846;
-
+// Base class Circle
 class Circle {
 protected:
     double radius;
-    string* circleData; // Something to destroy
+    const double PI = 3.14159;
 public:
-    Circle(double r) : radius(r) {
-        circleData = new string("Circle data with radius: " + to_string(radius));
-    }
+    Circle(double r) : radius(r) {}
 
-    virtual double square() {
-        return PI * radius * radius;
-    }
-
-    double circumference() {
+    // Virtual methods
+    virtual double getLength() const {
         return 2 * PI * radius;
     }
 
-    virtual string info() {
-        return "Circle: radius = " + to_string(radius) +
-            ", square = " + to_string(square()) +
-            ", circumference = " + to_string(circumference());
+    virtual void showInfo() const {
+        cout << "Circle with radius: " << radius << endl;
+        cout << "Circumference: " << getLength() << endl;
     }
 
-    virtual ~Circle() {
-        cout << "Circle destructor: deleting circle data" << endl;
-        delete circleData; // DESTROY DATA
+    virtual ~Circle() {}  // Virtual destructor for proper cleanup
+};
+
+//class Disk (inherits from Circle)
+class Disk : public Circle {
+public:
+    Disk(double r) : Circle(r) {}
+
+    // Override virtual methods
+    double getArea() const {
+        return PI * radius * radius;
+    }
+
+    void showInfo() const override {
+        cout << "Disk with radius: " << radius << endl;
+        cout << "Circumference: " << getLength() << endl;
+        cout << "Area: " << getArea() << endl;
     }
 };
 
-class RightTriangle {
-protected:
-    double a, b;
-    string* triangleData; // Something to destroy
+//  class Cylinder (inherits from Disk)
+class Cylinder : public Disk {
+private:
+    double height;
 public:
-    RightTriangle(double cat1, double cat2) : a(cat1), b(cat2) {
-        triangleData = new string("Triangle data with legs: " + to_string(a) + ", " + to_string(b));
+    Cylinder(double r, double h) : Disk(r), height(h) {}
+
+    // Additional methods for cylinder
+    double getVolume() const {
+        return getArea() * height;
     }
 
-    virtual double square() {
-        return 0.5 * a * b;
+    double getSideArea() const {
+        return getLength() * height;
     }
 
-    double perimeter() {
-        double c = sqrt(a * a + b * b);
-        return a + b + c;
+    double getFullArea() const {
+        return 2 * getArea() + getSideArea();
     }
 
-    virtual string info() {
-        return "Right triangle: legs = " + to_string(a) + ", " + to_string(b) +
-            ", square = " + to_string(square()) +
-            ", perimeter = " + to_string(perimeter());
-    }
-
-    virtual ~RightTriangle() {
-        cout << "Triangle destructor: deleting triangle data" << endl;
-        delete triangleData; // DESTROY DATA
-    }
-};
-
-class InscribedRightTriangle : public Circle, public RightTriangle {
-public:
-    InscribedRightTriangle(double cat1, double cat2)
-        : RightTriangle(cat1, cat2),
-        Circle(sqrt(cat1* cat1 + cat2 * cat2) / 2) {}
-
-    double square() override {
-        return RightTriangle::square();
-    }
-
-    string info() {
-        return "Right triangle inscribed in circle: legs = " + to_string(a) + ", " + to_string(b) +
-            ", circumradius = " + to_string(radius) +
-            ", triangle square = " + to_string(RightTriangle::square()) +
-            ", triangle perimeter = " + to_string(perimeter()) +
-            ", circle square = " + to_string(Circle::square()) +
-            ", circle circumference = " + to_string(circumference());
+    void showInfo() const override {
+        cout << "Cylinder with radius: " << radius << " and height: " << height << endl;
+        cout << "Base circumference: " << getLength() << endl;
+        cout << "Base area: " << getArea() << endl;
+        cout << "Side surface area: " << getSideArea() << endl;
+        cout << "Total surface area: " << getFullArea() << endl;
+        cout << "Volume: " << getVolume() << endl;
     }
 };
 
 int main() {
-    double cat1, cat2;
+    double radius, height;
 
-    cout << "Enter the first leg of the right triangle: ";
-    cin >> cat1;
-    cout << "Enter the second leg of the right triangle: ";
-    cin >> cat2;
+    // Get user input for Circle
+    cout << "Enter radius for Circle: ";
+    cin >> radius;
 
-    InscribedRightTriangle triangle(cat1, cat2);
+    // Get user input for Disk
+    double diskRadius;
+    cout << "Enter radius for Disk: ";
+    cin >> diskRadius;
 
-    // GET INDIVIDUAL AREAS:
-    cout << "\n--- Individual Areas ---" << endl;
-    cout << "Only triangle area: " << triangle.RightTriangle::square() << endl;
-    cout << "Only circle area: " << triangle.Circle::square() << endl;
+    // Get user input for Cylinder
+    double cylinderRadius, cylinderHeight;
+    cout << "Enter radius for Cylinder: ";
+    cin >> cylinderRadius;
+    cout << "Enter height for Cylinder: ";
+    cin >> cylinderHeight;
 
-    // GET PERIMETER AND CIRCUMFERENCE:
-    cout << "\n--- Perimeter and Circumference ---" << endl;
-    cout << "Triangle perimeter: " << triangle.perimeter() << endl;
-    cout << "Circle circumference: " << triangle.circumference() << endl;
+    // Polymorphism demonstration
+    Circle* shapes[3];  // Array of pointers to base class
 
-    ofstream file("result.txt");
-    if (file.is_open()) {
-        file << "Shape information:" << endl;
-        file << "==========================================" << endl;
-        file << triangle.info() << endl;
-        file.close();
-        cout << "\nResults written to file 'result.txt'" << endl;
+    // Creating different objects but storing them as base class pointers
+    shapes[0] = new Circle(radius);                    
+    shapes[1] = new Disk(diskRadius);                
+    shapes[2] = new Cylinder(cylinderRadius, cylinderHeight);   
+
+    cout << "\n=== Polymorphism Demonstration ===" << endl;
+    for (int i = 0; i < 3; i++) {
+        cout << "\n--- Shape " << (i + 1) << " ---" << endl;
+        shapes[i]->showInfo();  // Each object calls its OWN showInfo() method
     }
-    else {
-        cout << "Error opening file!" << endl;
+
+    // Memory cleanup
+    for (int i = 0; i < 3; i++) {
+        delete shapes[i];  // Virtual destructor ensures proper cleanup
     }
 
-    cout << "\nDestructors will clean up when program ends..." << endl;
+    // Demonstration of individual objects
+    cout << "\n=== Individual Objects ===" << endl;
+
+    Circle circle(radius);
+    cout << "\n--- Circle ---" << endl;
+    circle.showInfo();
+
+    Disk disk(diskRadius);
+    cout << "\n--- Disk ---" << endl;
+    disk.showInfo();
+
+    Cylinder cylinder(cylinderRadius, cylinderHeight);
+    cout << "\n--- Cylinder ---" << endl;
+    cylinder.showInfo();
+
     return 0;
 }
